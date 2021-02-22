@@ -1,29 +1,24 @@
 // In progress , not resolved
 
 class Type {
-  constructor() {
-    this.this.upEntrance = false;
-    this.leftEntrance = false;
-    this.rightEntrance = false;
-  }
+  constructor() {}
   setType() {}
-  typeSwitch() {}
-
-  typeCircle() {}
 }
 
 class Square {
   constructor(position, type) {
     this.position = position;
-    this.brutType = { type };
-    this.type = {};
+    this.type = type;
     this.canMove = true;
     this.isExit = false;
+    this.TOP = false;
+    this.LEFT = false;
+    this.RIGHT = false;
   }
 
   initializeSquare(xPosOfExit, heightOfBoard) {
     // Determine if the square can be rotated or not
-    if (this.brutType <= 0) this.canMove = false;
+    if (this.type <= 0) this.canMove = false;
     // Determine if this is Exit
     if (
       this.position.y === heightOfBoard - 1 &&
@@ -31,6 +26,66 @@ class Square {
     ) {
       this.isExit = true;
     }
+    // Determine entrance type
+    this.initializeEntrance();
+  }
+
+  initializeEntrance() {
+    switch (Math.abs(this.type)) {
+      case 1:
+        this.TOP = true;
+        this.LEFT = true;
+        this.RIGHT = true;
+        break;
+      case (2, 6, 8):
+        this.LEFT = true;
+        this.RIGHT = true;
+        break;
+      case (3, 10, 11):
+        this.TOP = true;
+        break;
+      case (4, 7):
+        this.TOP = true;
+        this.RIGHT = true;
+        break;
+      case (5, 9):
+        this.TOP = true;
+        this.LEFT = true;
+        break;
+      case 12:
+        this.LEFT = true;
+      case 13:
+        this.RIGHT = true;
+      default:
+        this.RIGHT = false;
+        this.LEFT = false;
+        this.TOP = false;
+    }
+  }
+
+  returnMovement(entrance) {
+    let result = {};
+    switch (this.type) {
+      case (1, 3, 4, 5, 7, 8, 9, 12, 13):
+        result = { x: 0, y: 1 };
+        break;
+      case (4, 10):
+        result = { x: -1, y: 1 };
+        break;
+      case (5, 11):
+        result = { x: 1, y: 1 };
+        break;
+      case (2, 8):
+        if (entrance === "LEFT") {
+          result = { x: 1, y: 0 };
+        } else if (entrance === "RIGHT") {
+          result = { x: -1, y: 0 };
+        }
+        break;
+      default:
+        result = { x: 0, y: 0 };
+    }
+    return result;
   }
 }
 
@@ -110,7 +165,6 @@ while (true) {
   let position = { x: XI, y: YI };
   // Box Indiana is in
   let boxIn = `${Math.abs(grid[YI][XI])}`;
-  console.warn("boxIn", boxIn);
 
   // DETERMINE the Box in which Indiana will arrive
   let nextBox = "";
@@ -159,10 +213,8 @@ while (true) {
     Y = 1;
   }
 
-  console.warn("X et Y", X, Y);
   //Position in next round
   const positionNext = { x: position.x + X, y: position.y + Y };
-  console.warn("positionNext", positionNext);
   // Add the position in which he arrives
   let PosiNext = "";
   if (X === -1) {
@@ -175,10 +227,8 @@ while (true) {
     PosiNext = "TOP";
   }
 
-  console.warn("PosiNext", PosiNext);
   // Type of box in which Indiana will be
   let boxNext = `${Math.abs(grid[positionNext.y][positionNext.x])}`;
-  console.warn("boxNext", boxNext);
   // Check if can enter by PosiNext in this room
   let entrance = true;
 
@@ -212,14 +262,11 @@ while (true) {
     entrance = false;
   }
 
-  console.warn("entrance", entrance);
-
   let nextBoxCoord = `${positionNext.x} ${positionNext.y}`;
   let rotation = "";
 
   if (entrance === false) {
     if (PosiNext === "TOP") {
-      console.warn("hey");
       if (
         boxNext === "2" ||
         boxNext === "6" ||
@@ -262,8 +309,6 @@ while (true) {
     action = nextBoxCoord + " " + rotation;
   }
 
-  console.warn("rotation", rotation);
-
   // Il s'agit de modifier la grid à présent en fonction de ce qu'on a fait
 
   //4,5,10,11,12,13
@@ -303,7 +348,6 @@ while (true) {
   } else if (rotation === "LEFT" && boxNext === "12") {
     boxNext = "11";
   }
-  console.warn("boxNext à la fin", boxNext);
 
   grid[positionNext.y][positionNext.x] = boxNext;
 
