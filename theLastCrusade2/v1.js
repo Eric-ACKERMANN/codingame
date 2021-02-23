@@ -1,5 +1,33 @@
 // In progress , not resolved
 
+// TOOLS
+
+class Stack extends Array {
+  push(element) {
+    this.push(element);
+  }
+  // pop removes last element
+  pop() {
+    return this.pop();
+  }
+  isEmpty() {
+    return this.length == 0;
+  }
+  //peek takes the last element
+  peek() {
+    return this[this.length - 1];
+  }
+  size() {
+    return this.length;
+  }
+  clear() {
+    this = [];
+  }
+
+  toString() {
+    return this.items.toString();
+  }
+}
 class Type {
   constructor() {}
   setType() {}
@@ -110,6 +138,7 @@ class Board {
   }
 }
 
+// Classe qui définit un Personnage, ou un boulet
 class Character {
   constructor() {
     this.position = {};
@@ -118,6 +147,14 @@ class Character {
   setPosition(pos, entrance) {
     this.position = pos;
     this.entrance = entrance;
+  }
+}
+// Classe d'objets qui définissent un tour
+class Turn {
+  constructor(characterPosition, grid, history) {
+    this.grid = grid;
+    this.characterPosition = characterPosition;
+    this.history = history;
   }
 }
 
