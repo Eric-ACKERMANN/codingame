@@ -1,13 +1,14 @@
-// In progress , not resolved
+// DFS de base, fonctionne mais ne permet pas de résoudre des grands puzzle car trop gourmand. A optimiser.
+// Ne prend pas en compte les rochers
 
 // TOOLS
 
 class Stack extends Array {
-  push(element) {
+  enqueue(element) {
     this.push(element);
   }
   // pop removes last element
-  pop() {
+  destack() {
     return this.pop();
   }
   isEmpty() {
@@ -17,26 +18,12 @@ class Stack extends Array {
   peek() {
     return this[this.length - 1];
   }
-  size() {
-    return this.length;
-  }
-  clear() {
-    this = [];
-  }
-
-  toString() {
-    return this.items.toString();
-  }
-}
-class Type {
-  constructor() {}
-  setType() {}
 }
 
 class Square {
   constructor(position, type) {
     this.position = position;
-    this.type = type;
+    this.type = Number(type);
     this.canMove = true;
     this.isExit = false;
     this.TOP = false;
@@ -44,11 +31,68 @@ class Square {
     this.RIGHT = false;
   }
 
+  applyAction(action) {
+    const type = Math.abs(this.type);
+    if (action === "left") {
+      switch (type) {
+        case 3:
+        case 5:
+        case 7:
+        case 8:
+        case 9:
+        case 11:
+        case 12:
+        case 13:
+          this.type = type - 1;
+          break;
+        case 2:
+        case 4:
+          this.type = type + 1;
+          break;
+        case 6:
+          this.type = 9;
+          break;
+        case 10:
+          this.type = 13;
+          break;
+        default:
+          break;
+      }
+    } else if (action === "right") {
+      switch (type) {
+        case 3:
+        case 5:
+          this.type = type - 1;
+          break;
+        case 2:
+        case 4:
+        case 6:
+        case 7:
+        case 8:
+        case 10:
+        case 11:
+        case 12:
+          this.type = type + 1;
+          break;
+        case 9:
+          this.type = 6;
+          break;
+        case 13:
+          this.type = 10;
+          break;
+        default:
+          break;
+      }
+    }
+    this.initializeEntrance();
+  }
+
   initializeSquare(xPosOfExit, heightOfBoard) {
     // Determine if the square can be rotated or not
     if (this.type <= 0) this.canMove = false;
     // Determine if this is Exit
     if (
+      xPosOfExit &&
       this.position.y === heightOfBoard - 1 &&
       this.position.x === xPosOfExit
     ) {
@@ -59,82 +103,156 @@ class Square {
   }
 
   initializeEntrance() {
-    switch (Math.abs(this.type)) {
+    const type = Math.abs(this.type);
+    switch (type) {
       case 1:
         this.TOP = true;
         this.LEFT = true;
         this.RIGHT = true;
         break;
-      case (2, 6, 8):
+      case 2:
+      case 6:
+      case 8:
+        this.TOP = false;
         this.LEFT = true;
         this.RIGHT = true;
+
         break;
-      case (3, 10, 11):
+      case 3:
+      case 10:
+      case 11:
         this.TOP = true;
+        this.LEFT = false;
+        this.RIGHT = false;
+
         break;
-      case (4, 7):
+      case 4:
+      case 7:
         this.TOP = true;
+        this.LEFT = false;
         this.RIGHT = true;
+
         break;
-      case (5, 9):
+      case 5:
+      case 9:
         this.TOP = true;
         this.LEFT = true;
+        this.RIGHT = false;
         break;
       case 12:
-        this.LEFT = true;
-      case 13:
-        this.RIGHT = true;
-      default:
-        this.RIGHT = false;
-        this.LEFT = false;
         this.TOP = false;
+        this.LEFT = false;
+
+        this.RIGHT = true;
+        break;
+      case 13:
+        this.TOP = false;
+        this.LEFT = true;
+        this.RIGHT = false;
+
+        break;
+      default:
+        this.TOP = false;
+        this.LEFT = false;
+        this.RIGHT = false;
+
+        break;
     }
   }
 
-  returnMovement(entrance) {
-    let result = {};
-    switch (this.type) {
-      case (1, 3, 4, 5, 7, 8, 9, 12, 13):
-        result = { x: 0, y: 1 };
-        break;
-      case (4, 10):
-        result = { x: -1, y: 1 };
-        break;
-      case (5, 11):
-        result = { x: 1, y: 1 };
-        break;
-      case (2, 8):
-        if (entrance === "LEFT") {
-          result = { x: 1, y: 0 };
-        } else if (entrance === "RIGHT") {
-          result = { x: -1, y: 0 };
-        }
-        break;
-      default:
-        result = { x: 0, y: 0 };
+  // Détermine la sortie en fonction du type et de l'entrée
+  determineExit(entrance) {
+    const type = Math.abs(this.type);
+    if (entrance === "LEFT") {
+      switch (type) {
+        case 2:
+        case 6:
+          return "RIGHT";
+        case 1:
+        case 5:
+        case 8:
+        case 9:
+        case 13:
+          return "BOTTOM";
+        default:
+          return false;
+      }
+    } else if (entrance === "RIGHT") {
+      switch (type) {
+        case 2:
+        case 6:
+          return "LEFT";
+        case 1:
+        case 4:
+        case 7:
+        case 8:
+        case 12:
+          return "BOTTOM";
+        default:
+          return false;
+      }
+    } else {
+      switch (type) {
+        case 4:
+        case 10:
+          return "LEFT";
+        case 5:
+        case 11:
+          return "RIGHT";
+        case 1:
+        case 3:
+        case 7:
+        case 9:
+          return "BOTTOM";
+        default:
+          return false;
+      }
     }
-    return result;
+  }
+  // Determine si on peut sortir d'un block
+  canEnter(exitOldBlock) {
+    if (exitOldBlock === "LEFT" && this.RIGHT) {
+      return "RIGHT";
+    } else if (exitOldBlock === "RIGHT" && this.LEFT) {
+      return "LEFT";
+    } else if (exitOldBlock === "BOTTOM" && this.TOP) {
+      return "TOP";
+    } else {
+      return false;
+    }
   }
 }
 
 class Board {
-  constructor(width, height) {
+  constructor(width, height, EX) {
     this.width = width;
     this.height = height;
     this.board = [];
+    this.EX = EX;
   }
 
-  initializeBoard(grid, EX) {
+  initializeBoard(grid) {
     let board = new Array(this.height);
-
     for (let i = 0; i < this.height; i++) {
       board[i] = new Array(this.width);
       for (let j = 0; j < this.width; j++) {
         board[i][j] = new Square({ x: j, y: i }, grid[i][j]);
-        board[i][j].initializeSquare(EX, this.height);
+        board[i][j].initializeSquare(this.EX, this.height);
       }
     }
     this.board = board;
+  }
+
+  createBoardCopy(board) {
+    let copyBoard = new Array(board.length);
+    for (let i = 0; i < board.length; i++) {
+      copyBoard[i] = new Array(board[i].length);
+      for (let j = 0; j < board[i].length; j++) {
+        copyBoard[i][j] = new Square({ x: j, y: i }, board[i][j].type);
+        copyBoard[i][j].initializeSquare(this.EX, this.height);
+      }
+    }
+    this.board = copyBoard;
   }
 }
 
@@ -143,18 +261,119 @@ class Character {
   constructor() {
     this.position = {};
     this.entrance = false;
+    this.stack = [];
   }
   setPosition(pos, entrance) {
     this.position = pos;
     this.entrance = entrance;
   }
+
+  calculateNextPosition(position, exit) {
+    let newPosition = { ...position };
+    if (exit === "LEFT") {
+      newPosition.x = newPosition.x - 1;
+    } else if (exit === "RIGHT") {
+      newPosition.x = newPosition.x + 1;
+    } else if (exit === "BOTTOM") {
+      newPosition.y = newPosition.y + 1;
+    }
+    return newPosition;
+  }
+
+  simulation(grid) {
+    console.warn("Enter the simulation");
+    let stack = new Stack();
+
+    const situation = {
+      action: { left: true, right: true, nothing: true },
+      position: this.position,
+      entrance: this.entrance,
+      grid: grid,
+      actionHistory: [],
+    };
+    const result = [];
+    stack.enqueue(situation);
+    let counter = 0;
+    loopWhile: while (!stack.isEmpty()) {
+      counter = counter + 1;
+      //console.warn("counter",counter)
+      // 1.On prend le dernier élement du stack et on l'enlève
+      const situation = stack.peek();
+      stack.destack();
+      console.warn(situation.position);
+      // console.warn("situation action", situation.actionHistory);
+      // 2.On détermine comment on sort du block actuel
+      const currentBlock =
+        situation.grid.board[situation.position.y][situation.position.x];
+      const exit = currentBlock.determineExit(situation.entrance);
+      // console.warn("exit : ", exit);
+      // 3.On détermine la nouvelle position
+      const nextPosition = this.calculateNextPosition(situation.position, exit);
+      // console.warn("nextPosition", nextPosition);
+      // 4. Est-ce le dernier bloc ? Si oui, on finit la simulation, si non on continue
+      if (situation.grid.board[nextPosition.y][nextPosition.x].isExit) {
+        stack.enqueue(situation);
+        // console.warn("Gagné");
+        break loopWhile;
+      }
+
+      // 7. On loop sur les actions
+      loopAction: for (const property in situation.action) {
+        //  console.warn("Action tested", property);
+        const { position, entrance, grid } = situation;
+        let block = grid.board[nextPosition.y][nextPosition.x];
+
+        // 8. Si property = "left" ou "right" et type de black <=0 alors on annule
+        if ((property === "left" || property === "right") && block.type <= 0) {
+          //  console.warn("action aborted", property);
+          continue;
+        }
+
+        // 9. On crée un block idem à celui qu'on devrait changer pour tester la property
+        let newBlock = new Square(
+          { x: nextPosition.x, y: nextPosition.y },
+          block.type
+        );
+        // console.warn("newBlock avant", newBlock.type);
+        newBlock.initializeSquare();
+        newBlock.applyAction(property);
+        //  console.warn("newBlock après", newBlock.type);
+        // 10. On test si on peut y rentrer, si on peut on continue, si on peut pas on arrête la boucle
+        // console.warn("exit", exit);
+        const canEnterNewBlock = newBlock.canEnter(exit);
+        // console.warn("canEnterNewBlock", canEnterNewBlock);
+        if (!canEnterNewBlock) {
+          //  console.warn("action aborted", property);
+          continue;
+        }
+        // 11. On recrée une nouvelle grid et on change le bloc dans la grid, en remplacant le bloc existant par un nouveau
+        const newGrid = new Board(grid.width, grid.height, grid.EX);
+        newGrid.createBoardCopy(grid.board);
+        newGrid.board[nextPosition.y][nextPosition.x] = newBlock;
+        // 12. On crée une nouvelle situation à enregistrer
+        let newSituation = {
+          action: { left: true, right: true, nothing: true },
+          position: nextPosition,
+          entrance: canEnterNewBlock,
+          grid: newGrid,
+          actionHistory: [...situation.actionHistory],
+        };
+        // 12. On enregistre l'action et on met la nouvelle situation dans la liste, si on peut pas, on fait rien
+        newSituation.actionHistory.push(
+          new Action(nextPosition, property.toUpperCase())
+        );
+        stack.enqueue(newSituation);
+      }
+    }
+    const final_sit = stack.peek();
+    return final_sit.actionHistory;
+  }
 }
-// Classe d'objets qui définissent un tour
-class Turn {
-  constructor(characterPosition, grid, history) {
-    this.grid = grid;
-    this.characterPosition = characterPosition;
-    this.history = history;
+
+class Action {
+  constructor(position, property) {
+    this.position = position;
+    this.action = property;
   }
 }
 
@@ -172,8 +391,8 @@ for (let i = 0; i < H; i++) {
 const EX = parseInt(readline()); // the coordinate along the X axis of the exit.
 
 // board creation and initialization
-let board = new Board(W, H);
-board.initializeBoard(grid, EX);
+let board = new Board(W, H, EX);
+board.initializeBoard(grid);
 // Character creation and initialization
 let Indiana = new Character();
 
@@ -184,9 +403,10 @@ while (true) {
   const YI = parseInt(inputs[1]);
   const POSI = inputs[2];
   const R = parseInt(readline()); // the number of rocks currently in the grid.
+  console.warn(R);
   Indiana.setPosition({ x: XI, y: YI }, POSI);
   if (R > 0) {
-    let rocks = new Array(R);
+    var rocks = new Array(R);
   }
 
   for (let i = 0; i < R; i++) {
@@ -196,201 +416,25 @@ while (true) {
     const POSR = inputs[2];
     rocks[i] = new Character({ x: XR, y: YR }, POSR);
   }
-  console.warn(grid);
-  // Position Indiana is in
-
-  let position = { x: XI, y: YI };
-  // Box Indiana is in
-  let boxIn = `${Math.abs(grid[YI][XI])}`;
-
-  // DETERMINE the Box in which Indiana will arrive
-  let nextBox = "";
-
-  // We need to know X and Y (movement of this turn
-  let X = 0;
-  let Y = 0;
-
-  // X and Y are determined by the box indiana is in and the pos in which he enters it
-  if (boxIn === "1") {
-    X = 0;
-    Y = 1;
-  }
-  if (
-    (boxIn === "2" && POSI === "LEFT") ||
-    (boxIn === "5" && POSI === "TOP") ||
-    (boxIn === "6" && POSI === "LEFT") ||
-    (boxIn === "11" && POSI === "TOP")
-  ) {
-    X = 1;
-    Y = 0;
-  }
-  if (
-    (boxIn === "2" && POSI === "RIGHT") ||
-    (boxIn === "4" && POSI === "TOP") ||
-    (boxIn === "10" && POSI === "TOP") ||
-    (boxIn === "6" && POSI === "RIGHT")
-  ) {
-    X = -1;
-    Y = 0;
-  }
-  if (
-    (boxIn === "3" && POSI === "TOP") ||
-    (boxIn === "4" && POSI === "RIGHT") ||
-    (boxIn === "5" && POSI === "LEFT") ||
-    (boxIn === "7" && POSI === "TOP") ||
-    (boxIn === "7" && POSI === "RIGHT") ||
-    (boxIn === "8" && POSI === "LEFT") ||
-    (boxIn === "8" && POSI === "RIGHT") ||
-    (boxIn === "9" && POSI === "TOP") ||
-    (boxIn === "9" && POSI === "LEFT") ||
-    (boxIn === "12" && POSI === "RIGHT") ||
-    (boxIn === "13" && POSI === "LEFT")
-  ) {
-    X = 0;
-    Y = 1;
-  }
-
-  //Position in next round
-  const positionNext = { x: position.x + X, y: position.y + Y };
-  // Add the position in which he arrives
-  let PosiNext = "";
-  if (X === -1) {
-    PosiNext = "RIGHT";
-  }
-  if (X === 1) {
-    PosiNext = "LEFT";
-  }
-  if (Y === 1) {
-    PosiNext = "TOP";
-  }
-
-  // Type of box in which Indiana will be
-  let boxNext = `${Math.abs(grid[positionNext.y][positionNext.x])}`;
-  // Check if can enter by PosiNext in this room
-  let entrance = true;
-
-  if (
-    (PosiNext === "TOP" && boxNext === "2") ||
-    (PosiNext === "TOP" && boxNext === "6") ||
-    (PosiNext === "TOP" && boxNext === "8") ||
-    (PosiNext === "TOP" && boxNext === "12") ||
-    (PosiNext === "TOP" && boxNext === "13")
-  ) {
-    entrance = false;
-  }
-  if (
-    (PosiNext === "LEFT" && boxNext === "3") ||
-    (PosiNext === "LEFT" && boxNext === "4") ||
-    (PosiNext === "LEFT" && boxNext === "7") ||
-    (PosiNext === "LEFT" && boxNext === "10") ||
-    (PosiNext === "LEFT" && boxNext === "11") ||
-    (PosiNext === "LEFT" && boxNext === "12")
-  ) {
-    entrance = false;
-  }
-  if (
-    (PosiNext === "RIGHT" && boxNext === "3") ||
-    (PosiNext === "RIGHT" && boxNext === "5") ||
-    (PosiNext === "RIGHT" && boxNext === "9") ||
-    (PosiNext === "RIGHT" && boxNext === "10") ||
-    (PosiNext === "RIGHT" && boxNext === "11") ||
-    (PosiNext === "RIGHT" && boxNext === "13")
-  ) {
-    entrance = false;
-  }
-
-  let nextBoxCoord = `${positionNext.x} ${positionNext.y}`;
-  let rotation = "";
-
-  if (entrance === false) {
-    if (PosiNext === "TOP") {
-      if (
-        boxNext === "2" ||
-        boxNext === "6" ||
-        boxNext === "8" ||
-        boxNext === "12"
-      ) {
-        rotation = "LEFT";
-      } else {
-        rotation = "RIGHT";
-      }
-    }
-
-    if (PosiNext === "LEFT") {
-      if (boxNext === "3" || boxNext === "7" || boxNext === "10") {
-        rotation = "LEFT";
-      } else {
-        rotation = "RIGHT";
-      }
-    }
-
-    if (PosiNext === "RIGHT") {
-      if (
-        (boxNext === boxNext) === "3" ||
-        boxNext === "9" ||
-        boxNext === "11"
-      ) {
-        rotation = "LEFT";
-      } else {
-        rotation = "RIGHT";
-      }
-    }
-  } else {
-    rotation = "WAIT";
-  }
-
-  let action = "";
-  if (rotation === "WAIT") {
-    action = rotation;
-  } else {
-    action = nextBoxCoord + " " + rotation;
-  }
-
-  // Il s'agit de modifier la grid à présent en fonction de ce qu'on a fait
-
-  //4,5,10,11,12,13
-  if (rotation === "RIGHT" && boxNext === "2") {
-    boxNext = "3";
-  } else if (rotation === "RIGHT" && boxNext === "3") {
-    boxNext = "2";
-  } else if (rotation === "RIGHT" && boxNext === "5") {
-    boxNext = "4";
-  } else if (rotation === "RIGHT" && boxNext === "10") {
-    boxNext = "11";
-  } else if (rotation === "RIGHT" && boxNext === "11") {
-    boxNext = "12";
-  } else if (rotation === "RIGHT" && boxNext === "12") {
-    boxNext = "13";
-  } else if (rotation === "RIGHT" && boxNext === "13") {
-    boxNext = "10";
-  }
-
-  //2,3,6,7,8,9,10,11,12
-  if (rotation === "LEFT" && boxNext === "2") {
-    boxNext = "3";
-  } else if (rotation === "LEFT" && boxNext === "3") {
-    boxNext = "2";
-  } else if (rotation === "LEFT" && boxNext === "6") {
-    boxNext = "9";
-  } else if (rotation === "LEFT" && boxNext === "7") {
-    boxNext = "6";
-  } else if (rotation === "LEFT" && boxNext === "8") {
-    boxNext = "7";
-  } else if (rotation === "LEFT" && boxNext === "9") {
-    boxNext = "8";
-  } else if (rotation === "LEFT" && boxNext === "10") {
-    boxNext = "13";
-  } else if (rotation === "LEFT" && boxNext === "11") {
-    boxNext = "10";
-  } else if (rotation === "LEFT" && boxNext === "12") {
-    boxNext = "11";
-  }
-
-  grid[positionNext.y][positionNext.x] = boxNext;
+  let actions = Indiana.simulation(board);
 
   // Write an action using console.log()
   // To debug: console.error('Debug messages...');
 
-  // One line containing on of three commands: 'X Y LEFT', 'X Y RIGHT' or 'WAIT'
-  console.log(action);
+  if (actions.length > 0) {
+    const X = actions[0].position.x;
+    const Y = actions[0].position.y;
+    const action = actions[0].action;
+    // On met à jour la grid
+
+    if (action === "NOTHING") {
+      console.log("WAIT");
+    } else {
+      board.board[Y][X].applyAction(action.toLowerCase());
+      // One line containing on of three commands: 'X Y LEFT', 'X Y RIGHT' or 'WAIT'
+      console.log(`${X} ${Y} ${action}`);
+    }
+  } else {
+    console.log("WAIT");
+  }
 }
