@@ -2,31 +2,6 @@ const ENDGAME_PARAMETER = 5;
 const Prioritary_Target = [25, 22, 19, 34, 31, 28];
 const COST_2_TO_3_LIMIT = 12;
 
-// Définition of an Action
-class Action {
-  constructor(type, targetCellIndex, sourceCellIndex) {
-    this.type = type;
-    this.targetCellIndex = targetCellIndex;
-    this.sourceCellIndex = sourceCellIndex ? sourceCellIndex : undefined;
-  }
-
-  seed() {
-    return `SEED ${this.sourceCellIndex} ${this.targetCellIndex}`;
-  }
-
-  wait() {
-    return "WAIT";
-  }
-
-  grow() {
-    return `GROW ${this.targetCellIndex}`;
-  }
-
-  complete() {
-    return `COMPLETE ${this.targetCellIndex}`;
-  }
-}
-
 // Définition of the Player
 class Player {
   constructor() {
@@ -87,17 +62,14 @@ class Player {
         richness: false,
       };
       // 1 On cherche la solution de l'arbre
-      // 1.1 On prend la size de l'arbre
       let size = tree.size;
-      // 1.1.1 Si size = 0 , on retire car ne peut planter
+      // 1.1.1 On passe les arbres de taille 0 car ils ne peuvent planter
       if (size === 0) continue;
       // 1.2 On détermine tous ses voisins
-
-      let neighbors = Array.from(tree.oneCaseNeighbors);
-      if (size > 1)
-        neighbors = neighbors.concat(Array.from(tree.twoCaseNeighbors));
+      let neighbors = Array.from(tree.twoCaseNeighbors);
       if (size > 2)
         neighbors = neighbors.concat(Array.from(tree.threeCaseNeighbors));
+
       // 1.3 On trie en fonction de la richesse du sol
       neighbors.sort((a, b) => game.board[a].richness - game.board[b].richness);
       // 1.4 On prend le plus riche ou il est possible de planter
